@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CodeCollab</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #6a11cb, #2575fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .file-explorer {
+            background-color: #1e1e1e;
+            border: 1px solid #2c2c2c;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .file-explorer ul {
+            list-style: none;
+            padding: 0;
+        }
+        .file-explorer li {
+            padding: 10px;
+            border-bottom: 1px solid #2c2c2c;
+        }
+        .file-explorer li:last-child {
+            border-bottom: none;
+        }
+        .file-explorer .folder-item, .file-explorer .file-item {
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+        .file-explorer .folder-item:hover, .file-explorer .file-item:hover {
+            background-color: #2a2a2a;
+        }
+
+        /* Add this new CSS */
+.file-actions-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+.file-actions-container .delete-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    opacity: 0; /* Initially hide the button */
+}
+.file-actions-container:hover .delete-btn {
+    opacity: 1; /* Show the button on hover */
+}
+.delete-btn:hover {
+    background-color: #d32f2f;
+}
+
+/* New styles for the dashboard file explorer */
+.header .header-buttons {
+    display: flex;
+    gap: 10px;
+}
+#create-folder-btn {
+    background-color: #2575fc;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: 500;
+}
+#create-folder-btn:hover {
+    background-color: #1a5ac1;
+}
+.file-explorer .folder-item {
+    font-weight: 600;
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+.file-explorer .file-list {
+    margin-left: 20px;
+    font-size: 0.95em;
+    padding: 5px 0;
+}
+.file-explorer .file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+}
+.file-explorer .file-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.file-explorer .folder-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* New styles for collapsible folders */
+.folder-item {
+    cursor: pointer;
+    user-select: none; /* Prevents text selection on click */
+}
+.folder-item .folder-icon {
+    transition: transform 0.2s ease-in-out;
+}
+.folder-item.open .folder-icon {
+    transform: rotate(90deg);
+}
+.file-list {
+    display: none; /* Initially hide the file list */
+}
+.folder-item.open + .file-list {
+    display: block; /* Show the list when the folder is 'open' */
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <a href="/" class="logo">CodeCollab</a>
+            <h1>Your Files</h1>
+            <div>
+                <button id="create-folder-btn">Create Folder</button>
+            </div>
+        </header>
+
+        <div id="file-explorer" class="file-explorer">
+            </div>
+    </div>
+    
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

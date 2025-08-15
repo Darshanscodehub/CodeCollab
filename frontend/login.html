@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - CodeCollab</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --background-color: #121212;
+            --surface-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --input-bg-color: #2c2c2c;
+            --error-color: #ff4d4d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column; /* Changed for header */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        body.fade-out {
+            animation: fadeOut 0.5s forwards;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        /* --- Particle Background --- */
+        .particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .particles li { position: absolute; list-style: none; display: block; animation: fly 20s linear infinite; bottom: -180px; }
+        .particles li::before { content: ''; position: absolute; font-weight: bold; color: rgba(255, 255, 255, 0.2); }
+        .particles li:nth-child(1)::before { content: '{ }'; font-size: 50px; color: rgba(37, 117, 252, 0.3); }
+        .particles li:nth-child(1) { left: 10%; animation-delay: 1s; animation-duration: 12s; }
+        .particles li:nth-child(2)::before { content: '</>'; font-size: 20px; color: rgba(106, 17, 203, 0.3); }
+        .particles li:nth-child(2) { left: 20%; animation-delay: 2s; animation-duration: 15s; }
+        .particles li:nth-child(3)::before { content: '()'; font-size: 30px; color: rgba(37, 117, 252, 0.4); }
+        .particles li:nth-child(3) { left: 25%; animation-delay: 4s; animation-duration: 10s; }
+        @keyframes fly { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(-1200px) rotate(720deg); opacity: 0; } }
+        
+        /* --- Shared Header --- */
+        .auth-header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 1;
+            background-color: var(--surface-color);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .subtitle { font-size: 1rem; color: #a0a0a0; margin-bottom: 30px; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; font-weight: 500; }
+        .input-group input { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #444; background-color: var(--input-bg-color); color: var(--text-color); font-family: 'Poppins', sans-serif; font-size: 1rem; transition: border-color 0.3s, box-shadow 0.3s; }
+        .input-group input:focus { outline: none; border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.3); }
+        
+        /* --- Inline Error Message --- */
+        .error-message {
+            color: var(--error-color);
+            font-size: 0.85rem;
+            margin-top: 5px;
+            min-height: 1.2em; /* Prevents layout shift */
+            text-align: left;
+        }
+        
+        button[type="submit"] { width: 100%; padding: 14px; border: none; border-radius: 8px; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        button[type="submit"]:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(106, 17, 203, 0.3); }
+        .form-link { margin-top: 25px; font-size: 0.9rem; color: #a0a0a0; }
+        .form-link a { color: var(--secondary-color); text-decoration: none; font-weight: 500; }
+        .form-link a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <header class="auth-header">
+        <a href="/" class="logo">CodeCollab</a>
+    </header>
+
+    <ul class="particles">
+        <li></li><li></li><li></li>
+    </ul>
+
+    <div class="login-container">
+        <p class="subtitle">Welcome back! Please sign in.</p>
+        
+        <form id="login-form" novalidate>
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="error-message" id="form-error"></div>
+            <button type="submit">Login</button>
+        </form>
+
+        <p class="form-link">
+            Don't have an account? <a href="/signup">Sign Up</a>
+        </p>
+    </div>
+
+    <script src="js/login.js">
+       
+    </script>
+</body>
+</html>

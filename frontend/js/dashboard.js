@@ -1,6 +1,6 @@
 // frontend/js/dashboard.js
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = 'https://darshan-codecollab-v1.onrender.com';
 const token = localStorage.getItem('token') || null;
 
 // New function to handle renaming a file

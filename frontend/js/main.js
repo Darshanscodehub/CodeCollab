@@ -1,6 +1,6 @@
 // frontend/js/main.js
 // =============== config ===============
-const API_BASE = 'http://localhost:3000'; // change if your backend is elsewhere
+const API_BASE = 'https://darshan-codecollab-v1.onrender.com'; // change if your backend is elsewhere
 
 // =============== globals ===============
 const socket = io(API_BASE);

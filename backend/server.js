@@ -90,7 +90,7 @@ io.on('connection', (socket) => {
     socket.on('code-change', (data) => {
         if (data.roomId) {
             roomCodes[data.roomId] = data.code;
-            socket.to(data.roomId).emit('code-change', data.code);
+            socket.broadcast.to(data.roomId).emit('code-change', data.code);
         } else {
             // fallback for no-room scenario (single shared editor)
             codeContent = data;

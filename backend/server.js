@@ -88,19 +88,20 @@ io.on('connection', (socket) => {
 
     // Handle code changes in a room
     socket.on('code-change', (data) => {
-        if (data.roomId) {
-            roomCodes[data.roomId] = data.code;
-            socket.broadcast.to(data.roomId).emit('code-change', data.code);
-        } else {
-            // fallback for no-room scenario (single shared editor)
-            codeContent = data;
-            socket.broadcast.emit('code-change', data);
-        }
-    });
-
-    socket.on('disconnect', () => {
-        console.log('A user disconnected');
-    });
+    if (data.roomId) {
+        roomCodes[data.roomId] = data.code;
+        // CHANGE: We now emit to everyone in the room, but we include the sender's ID.
+        io.to(data.roomId).emit('code-update', { 
+            code: data.code, 
+            senderId: socket.id 
+        });
+    } else {
+        // Fallback for the non-room scenario
+        socket.broadcast.emit('code-update', { 
+            code: data, 
+            senderId: socket.id 
+        });
+    }
 });
 
 

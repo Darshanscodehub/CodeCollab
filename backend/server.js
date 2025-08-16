@@ -1,6 +1,6 @@
 // Import required modules
-require('dotenv').config();
-console.log('JWT_SECRET is:', process.env.JWT_SECRET);
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });console.log('JWT_SECRET is:', process.env.JWT_SECRET);
 const JWT_SECRET = process.env.JWT_SECRET;
 const mongo_uri = process.env.MONGO_URI
 
@@ -17,7 +17,6 @@ const CodeSnippet = require('./models/CodeSnippet'); // Import the model
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
-const path = require('path');
 const authenticateUser = require('../middlewares/authMiddleware');
 
 

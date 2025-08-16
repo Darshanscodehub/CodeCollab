@@ -1,6 +1,6 @@
 // Import required modules
-require('dotenv').config();
-console.log('JWT_SECRET is:', process.env.JWT_SECRET);
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });console.log('JWT_SECRET is:', process.env.JWT_SECRET);
 const JWT_SECRET = process.env.JWT_SECRET;
 const mongo_uri = process.env.MONGO_URI
 
@@ -8,15 +8,16 @@ const express = require('express');  // For creating our web server
 const http = require('http');        // Required to run Socket.IO with Express
 const { Server } = require('socket.io'); // For real-time communication
 const cors = require('cors');        // To allow frontend to connect
-const Docker = require('dockerode');
-const docker = new Docker({ socketPath: '/var/run/docker.sock' }); 
+// const Docker = require('dockerode');
+// const docker = new Docker({ socketPath: '/var/run/docker.sock' }); 
+const { exec } = require('child_process');
+const fs = require('fs');
 const mongoose = require('mongoose');
 const CodeSnippet = require('./models/CodeSnippet'); // Import the model
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
-const path = require('path');
-const authenticateUser = require('../middlewares/authMiddleware');
+const authenticateUser = require('./middlewares/authMiddleware');
 
 
 // Create an Express app
@@ -103,76 +104,89 @@ io.on('connection', (socket) => {
 });
 
 
+
 // Compile & run code endpoint
-app.post('/run', async (req, res) => {
+// Compile & run code endpoint
+app.post('/run', (req, res) => {
     const { code, language } = req.body;
-    let image, cmd;
 
-    const fs = require('fs');
-    const path = require('path');
-    const fileName = language === 'c' ? 'main.c' : language === 'cpp' ? 'main.cpp' : 'script.txt';
-    const filePath = path.join(__dirname, 'temp', fileName);
-    fs.writeFileSync(filePath, code);
+    if (!code) {
+        return res.status(400).json({ output: 'No code provided.' });
+    }
 
+    const tempDir = path.join(__dirname, 'temp');
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // Use a unique filename to avoid race conditions if multiple users run code simultaneously
+    const uniqueId = Date.now() + '-' + Math.random().toString(36).substring(2, 8);
+    let filePath;
+    let command;
+    const cleanupFiles = [];
+
+    const getFilePath = (extension) => {
+        const p = path.join(tempDir, `${uniqueId}.${extension}`);
+        cleanupFiles.push(p);
+        return p;
+    };
 
     switch (language) {
         case 'javascript':
-            image = 'node:18';
-            cmd = ['node', '-e', code];
+            filePath = getFilePath('js');
+            fs.writeFileSync(filePath, code);
+            command = `node ${filePath}`;
             break;
+
         case 'python':
-            image = 'python:3.11';
-            cmd = ['python', '-c', code];
+            filePath = getFilePath('py');
+            fs.writeFileSync(filePath, code);
+            command = `python ${filePath}`;
             break;
+
         case 'c':
-            image = 'gcc:latest';
-           cmd = ['sh', '-c', 'gcc /code/main.c -o /code/main && /code/main'];
-    break;
+            filePath = getFilePath('c');
+            const executablePathC = path.join(tempDir, `${uniqueId}.out`);
+            cleanupFiles.push(executablePathC);
+            fs.writeFileSync(filePath, code);
+            command = `gcc ${filePath} -o ${executablePathC} && ${executablePathC}`;
+            break;
+
         case 'cpp':
-            image = 'gcc:latest';
-            cmd = ['sh', '-c', 'g++ /code/main.cpp -o /code/main && /code/main'];
-    break
+            filePath = getFilePath('cpp');
+            const executablePathCpp = path.join(tempDir, `${uniqueId}.out`);
+            cleanupFiles.push(executablePathCpp);
+            fs.writeFileSync(filePath, code);
+            command = `g++ ${filePath} -o ${executablePathCpp} && ${executablePathCpp}`;
+            break;
+
         default:
-            return res.json({ output: 'Unsupported language' });
+            return res.status(400).json({ output: 'Unsupported language' });
     }
 
-    try {
-        // Pull image if missing
-        const images = await docker.listImages();
-        if (!images.some(img => img.RepoTags && img.RepoTags.includes(image))) {
-            await docker.pull(image);
+    const execTimeout = 10000; // 10 seconds timeout
+
+    exec(command, { timeout: execTimeout }, (error, stdout, stderr) => {
+        // Cleanup the temporary files
+        cleanupFiles.forEach(file => {
+            if (fs.existsSync(file)) {
+                fs.unlinkSync(file);
+            }
+        });
+
+        if (error) {
+            // Check for timeout error
+            if (error.signal === 'SIGTERM') {
+                return res.json({ output: 'Execution timed out. Your code took too long to run.' });
+            }
+            // Other execution errors
+            return res.json({ output: stderr || error.message });
         }
-
-        // Create container
-        const container = await docker.createContainer({
-    Image: image,
-    Cmd: cmd,
-    AttachStdout: true,
-    AttachStderr: true,
-    HostConfig: {
-        AutoRemove: true,
-        Binds: [`${process.cwd()}/temp:/code`], // mount host folder
-    }
+        res.json({ output: stdout });
+    });
 });
 
-        const stream = await container.attach({ stream: true, stdout: true, stderr: true });
-        let output = '';
-        stream.on('data', chunk => { output += chunk.toString(); });
 
-        await container.start();
-        await container.wait();
-        try {
-    await container.remove({ force: true });
-} catch (err) {
-    console.log("Container removal error:", err.message);
-}
-
-
-        res.json({ output: output.trim() });
-    } catch (err) {
-        res.json({ output: 'Error: ' + err.message });
-    }
-});
 
 
 // Save code snippet (POST /snippets)

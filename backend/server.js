@@ -72,37 +72,32 @@ let codeContent = "// Start coding here...\n";
 let roomCodes = {};
 
 io.on('connection', (socket) => {
-    console.log('A user connected');
+    console.log('A user connected:', socket.id);
 
     // Join a room
     socket.on('join-room', (roomId) => {
         socket.join(roomId);
-        console.log(`User joined room: ${roomId}`);
+        console.log(`User ${socket.id} joined room: ${roomId}`);
 
-        // Send existing code for this room or default code
         if (!roomCodes[roomId]) {
-            roomCodes[roomId] = "// Start coding in your new room...\n";
+            roomCodes[roomId] = "// Welcome to your collaborative room!\n";
         }
         socket.emit('load-code', roomCodes[roomId]);
     });
 
     // Handle code changes in a room
     socket.on('code-change', (data) => {
-    if (data.roomId) {
-        roomCodes[data.roomId] = data.code;
-        // CHANGE: We now emit to everyone in the room, but we include the sender's ID.
-        io.to(data.roomId).emit('code-update', { 
-            code: data.code, 
-            senderId: socket.id 
-        });
-    } else {
-        // Fallback for the non-room scenario
-        socket.broadcast.emit('code-update', { 
-            code: data, 
-            senderId: socket.id 
-        });
-    }
-});
+        if (data.roomId) {
+            roomCodes[data.roomId] = data.code;
+            // THIS IS THE FIX: Broadcast to the room, which automatically excludes the sender.
+            socket.broadcast.to(data.roomId).emit('code-change', data.code);
+        }
+    });
+
+    // Handle user disconnection
+    socket.on('disconnect', () => {
+        console.log('A user disconnected:', socket.id);
+    });
 });
 
 

@@ -71,25 +71,36 @@ let codeContent = "// Start coding here...\n";
 // Store code per room in memory
 let roomCodes = {};
 
+// In backend/server.js
+
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
-    // Join a room
+    // When a user joins a room
     socket.on('join-room', (roomId) => {
         socket.join(roomId);
         console.log(`User ${socket.id} joined room: ${roomId}`);
 
-        if (!roomCodes[roomId]) {
-            roomCodes[roomId] = "// Welcome to your collaborative room!\n";
-        }
-        socket.emit('load-code', roomCodes[roomId]);
+        // Get the current code for the room, or a default
+        const currentCode = roomCodes[roomId] || "// Welcome! Waiting for code sync...\n";
+        
+        // Immediately send the current server-side code to the new user
+        socket.emit('load-code', currentCode);
+
+        // Notify OTHERS in the room that a new user has joined
+        socket.broadcast.to(roomId).emit('user-joined', { socketId: socket.id });
     });
 
-    // Handle code changes in a room
+    // When an existing user is asked to sync code with a new user
+    socket.on('sync-code', ({ code, toSocketId }) => {
+        // Send the code only to the new user
+        io.to(toSocketId).emit('load-code', code);
+    });
+
+    // When a user types, broadcast the changes
     socket.on('code-change', (data) => {
-        if (data.roomId) {
-            roomCodes[data.roomId] = data.code;
-            // THIS IS THE FIX: Broadcast to the room, which automatically excludes the sender.
+        if (data.roomId && data.code) {
+            roomCodes[data.roomId] = data.code; // Keep the server's version up to date
             socket.broadcast.to(data.roomId).emit('code-change', data.code);
         }
     });
@@ -99,7 +110,6 @@ io.on('connection', (socket) => {
         console.log('A user disconnected:', socket.id);
     });
 });
-
 
 // Compile & run code endpoint
 // Compile & run code endpoint

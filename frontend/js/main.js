@@ -8,6 +8,7 @@ let editor;
 let roomId = sessionStorage.getItem('roomId') || null;
 const token = localStorage.getItem('token') || null;
 const userData = JSON.parse(localStorage.getItem('user') || 'null');
+let isEditorUpdating = false; // Flag to prevent feedback loops
 
 // =============== helper: show avatar ===============
 function updateAvatarUI() {
@@ -364,27 +365,52 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         editor.onDidChangeModelContent(() => {
-            if (!editor) return;
-            const payload = roomId ? { roomId, code: editor.getValue() } : editor.getValue();
-            socket.emit('code-change', payload);
-        });
+    if (isEditorUpdating) {
+        return; // Don't emit change if it was caused by a socket update
+    }
+    if (!editor || !roomId) return;
+    const payload = { 
+        roomId: roomId,
+        code: editor.getValue()
+    };
+    socket.emit('code-change', payload);
+});
     });
 
     // =============== socket handlers ===============
+
+
+// When the editor first loads or receives synced code
 socket.on('load-code', (code) => { 
     if (editor) {
+        isEditorUpdating = true;
         editor.setValue(code); 
+        isEditorUpdating = false;
     }
 });
 
+// When another user types
 socket.on('code-change', (newCode) => {
     if (editor && editor.getValue() !== newCode) {
-        // Preserve cursor position for a smoother experience
+        isEditorUpdating = true;
         const currentPosition = editor.getPosition();
         editor.setValue(newCode);
         if (currentPosition) {
             editor.setPosition(currentPosition);
         }
+        isEditorUpdating = false;
+    }
+});
+
+// When another user joins, the server will tell us
+socket.on('user-joined', ({ socketId }) => {
+    console.log('A new user joined, sending them my code.');
+    if (editor) {
+        // Send our current code to the server to be forwarded to the new user
+        socket.emit('sync-code', {
+            code: editor.getValue(),
+            toSocketId: socketId,
+        });
     }
 });
 
@@ -397,6 +423,7 @@ socket.on('disconnect', () => {
     const el = document.getElementById('connection-status'); 
     if (el) el.textContent = 'Disconnected'; 
 });
+
 
     
     // NEW: Logout button event listener

@@ -372,9 +372,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // =============== socket handlers ===============
     socket.on('load-code', (code) => { if (editor) editor.setValue(code); });
-    socket.on('code-change', (newCode) => {
-        if (editor && editor.getValue() !== newCode) editor.setValue(newCode);
-    });
+    socket.on('code-update', (data) => {
+    // First, check if the message came from a different user.
+    if (data.senderId !== socket.id) {
+        if (editor && editor.getValue() !== data.code) {
+            // To make it smoother, we save the user's cursor position
+            const currentPosition = editor.getPosition();
+            
+            editor.setValue(data.code);
+            
+            // And then we restore it after the update
+            if (currentPosition) {
+                editor.setPosition(currentPosition);
+            }
+        }
+    }
+});
     socket.on('connect', () => { const el = document.getElementById('connection-status'); if (el) el.textContent = 'Connected'; });
     socket.on('disconnect', () => { const el = document.getElementById('connection-status'); if (el) el.textContent = 'Disconnected'; });
 
